@@ -9,6 +9,9 @@ export class CarouselAd {
         this.currentSlide = 0;
         this.slideElements = [];
         this.startX = null;
+        this.dragging = false;
+        this.dragStartX = 0;
+        this.dragCurrentX = 0;
     }
 
     init() {
@@ -16,36 +19,6 @@ export class CarouselAd {
         this.renderSlides();
         this.addListeners();
         console.log('Ad rendered.');
-    }
-
-    injectStyles() {
-        const style = document.createElement('style');
-        style.textContent = `
-          .carousel-slide {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            transition: transform 0.4s ease, opacity 0.4s ease;
-          }
-          .carousel-title { font-size: 16px; font-weight: bold; }
-          .carousel-subtitle { font-size: 11px; margin-top: 4px; }
-          .carousel-cta {
-            align-self: flex-end;
-            padding: 4px 8px;
-            background: #000;
-            color: #fff;
-            font-size: 11px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-          }
-          .carousel-cta:hover { transform: scale(1.05); }
-        `;
-        document.head.appendChild(style);
     }
 
     renderSlides() {
@@ -107,6 +80,38 @@ export class CarouselAd {
         this.updateSlides();
     }
 
+    startDrag(x) {
+        this.dragging = true;
+        this.dragStartX = x;
+        this.dragCurrentX = x;
+    }
+
+    onDrag(x) {
+        if (!this.dragging) return;
+        this.dragCurrentX = x;
+        const dx = this.dragCurrentX - this.dragStartX;
+
+        // Shift current + neighbors visually
+        this.slideElements.forEach((slide, i) => {
+            const offset = (i - this.currentSlide) * this.container.offsetWidth + dx;
+            slide.style.transition = 'none';
+            slide.style.transform = `translateX(${offset}px)`;
+            slide.style.opacity = i === this.currentSlide ? '1' : '0.7';
+        });
+    }
+
+    endDrag(x) {
+        if (!this.dragging) return;
+        const dx = x - this.dragStartX;
+        this.dragging = false;
+
+        if (Math.abs(dx) > 50) {
+            dx < 0 ? this.nextSlide() : this.prevSlide();
+        } else {
+            this.updateSlides(); // Snap back
+        }
+    }
+
     addListeners() {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowRight') this.nextSlide();
@@ -134,6 +139,21 @@ export class CarouselAd {
             else if (dx < -50) this.nextSlide();
             this.startX = null;
         });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') this.nextSlide();
+            if (e.key === 'ArrowLeft') this.prevSlide();
+        });
+
+        // Mouse
+        this.container.addEventListener('mousedown', e => this.startDrag(e.clientX));
+        document.addEventListener('mousemove', e => this.onDrag(e.clientX));
+        document.addEventListener('mouseup', e => this.endDrag(e.clientX));
+
+        // Touch
+        this.container.addEventListener('touchstart', e => this.startDrag(e.touches[0].clientX));
+        this.container.addEventListener('touchmove', e => this.onDrag(e.touches[0].clientX));
+        this.container.addEventListener('touchend', e => this.endDrag(e.changedTouches[0].clientX));
     }
 }
 

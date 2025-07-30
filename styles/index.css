@@ -48,3 +48,8 @@ body {
 .cta:hover {
     transform: scale(1.05);
 }
+
+.carousel-slide {
+    user-select: none;
+    touch-action: pan-y;
+}
