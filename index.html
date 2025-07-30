@@ -3,119 +3,15 @@
 <head>
     <meta charset="UTF-8" />
     <title>Compact Ad Carousel</title>
+    <link rel="icon" href="">
     <link rel="stylesheet" href="styles/index.css" />
 </head>
 <body>
 <div id="ad-container"></div>
-<script>
-    (function () {
-        const slidesData = [
-            {
-                bgColor: '#ffcc00',
-                title: 'Summer Sale!',
-                subtitle: 'Up to 50% off',
-                cta: 'Shop Now',
-            },
-            {
-                bgColor: '#66ccff',
-                title: 'New Arrivals',
-                subtitle: 'Check out the latest',
-                cta: 'Explore',
-            },
-            {
-                bgColor: '#99e699',
-                title: 'Limited Offer',
-                subtitle: 'Only for 3 days',
-                cta: 'Grab Deal',
-            },
-        ];
-
-        let currentSlide = 0;
-
-        const container = document.getElementById('ad-container');
-
-        const style = document.createElement('style');
-
-        document.head.appendChild(style);
-
-        function renderSlide(slide, index) {
-            const el = document.createElement('div');
-            el.className = 'slide';
-            el.style.background = slide.bgColor;
-            el.style.transform = `translateX(${index === currentSlide ? '0' : index < currentSlide ? '-100%' : '100%'})`;
-            el.style.opacity = index === currentSlide ? '1' : '0';
-
-            const title = document.createElement('div');
-            title.className = 'title';
-            title.textContent = slide.title;
-
-            const subtitle = document.createElement('div');
-            subtitle.className = 'subtitle';
-            subtitle.textContent = slide.subtitle;
-
-            const cta = document.createElement('div');
-            cta.className = 'cta';
-            cta.textContent = slide.cta;
-            cta.addEventListener('click', () => {
-                console.log(`CTA clicked on slide ${index} at ${Date.now()}`);
-            });
-
-            el.appendChild(title);
-            el.appendChild(subtitle);
-            el.appendChild(cta);
-
-            return el;
-        }
-
-        let slideElements = [];
-
-        function renderCarousel() {
-            container.innerHTML = '';
-            slideElements = slidesData.map((data, index) => {
-                const slide = renderSlide(data, index);
-                container.appendChild(slide);
-                return slide;
-            });
-            console.log('Ad rendered.');
-        }
-
-        function updateSlides() {
-            slideElements.forEach((slide, index) => {
-                if (index === currentSlide) {
-                    slide.style.transform = 'translateX(0)';
-                    slide.style.opacity = '1';
-                } else if (index < currentSlide) {
-                    slide.style.transform = 'translateX(-100%)';
-                    slide.style.opacity = '0';
-                } else {
-                    slide.style.transform = 'translateX(100%)';
-                    slide.style.opacity = '0';
-                }
-            });
-            console.log(`Slide changed to index ${currentSlide}`);
-        }
-
-        function nextSlide() {
-            currentSlide = (currentSlide + 1) % slidesData.length;
-            updateSlides();
-        }
-
-        function prevSlide() {
-            currentSlide = (currentSlide - 1 + slidesData.length) % slidesData.length;
-            updateSlides();
-        }
-
-        function addListeners() {
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'ArrowRight') nextSlide();
-                if (e.key === 'ArrowLeft') prevSlide();
-            });
-        }
-
-        // Initialize
-        renderCarousel();
-        addListeners();
-    })();
+<script type="module">
+    import { CarouselAd } from './scripts/CarouselAd.js';
+    const ad = new CarouselAd(document.getElementById('ad-container'));
+    ad.init();
 </script>
 </body>
 </html>
