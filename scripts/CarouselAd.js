@@ -1,60 +1,74 @@
 import { animate, easeOutQuad } from './animate.js';
 
-
+// Main class for the animated carousel ad
 export class CarouselAd {
     constructor(container) {
         this.container = container;
+
+        // Slide data
         this.slides = [
             { title: 'Summer Sale!', subtitle: 'Up to 50% off.', cta: 'Shop Now', bgColor: '#ffcc00' },
             { title: 'New Arrivals', subtitle: 'See what’s new.', cta: 'Explore', bgColor: '#66ccff' },
             { title: 'Limited Time', subtitle: 'Only this weekend.', cta: 'Grab Deal', bgColor: '#99e699' },
         ];
+
         this.currentSlide = 0;
         this.slideElements = [];
+
+        // For dragging/swiping
         this.startX = null;
         this.dragging = false;
         this.dragStartX = 0;
         this.dragCurrentX = 0;
     }
 
+    // Inject basic styles directly from JS (optional if not using external CSS)
     injectStyles() {
         const style = document.createElement('style');
         style.textContent = `
-    #ad-container {
-      position: relative;
-      width: 100%;
-      height: 300px; /* или нужная высота */
-      overflow: hidden;
-    }
-    .carousel-slide {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      transition: none; /* анимации в js */
-      will-change: transform, opacity;
-    }
-    .carousel-title { font-size: 16px; font-weight: bold; }
-    .carousel-subtitle { font-size: 11px; margin-top: 4px; }
-    .carousel-cta {
-      align-self: flex-end;
-      padding: 4px 8px;
-      background: #000;
-      color: #fff;
-      font-size: 11px;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: transform 0.3s ease;
-    }
-    .carousel-cta:hover { transform: scale(1.05); }
-  `;
+      #ad-container {
+        position: relative;
+        width: 100%;
+        height: 300px;
+        overflow: hidden;
+      }
+      .carousel-slide {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: none;
+        will-change: transform, opacity;
+      }
+      .carousel-title {
+        font-size: 16px;
+        font-weight: bold;
+      }
+      .carousel-subtitle {
+        font-size: 11px;
+        margin-top: 4px;
+      }
+      .carousel-cta {
+        align-self: flex-end;
+        padding: 4px 8px;
+        background: #000;
+        color: #fff;
+        font-size: 11px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+      }
+      .carousel-cta:hover {
+        transform: scale(1.05);
+      }
+    `;
         document.head.appendChild(style);
     }
 
-
+    // Animate between current and next slide
     animateToSlide(newIndex) {
         if (newIndex === this.currentSlide) return;
 
@@ -63,10 +77,12 @@ export class CarouselAd {
         const current = this.slideElements[this.currentSlide];
         const next = this.slideElements[newIndex];
 
+        // Prepare the next slide position
         next.style.transition = 'none';
         next.style.transform = `translateX(${direction * width}px)`;
         next.style.opacity = '1';
 
+        // Animate transition
         animate({
             from: 0,
             to: 1,
@@ -83,11 +99,12 @@ export class CarouselAd {
             },
             onComplete: () => {
                 this.currentSlide = newIndex;
-                this.updateSlides(); // Snap positions and cleanup
+                this.updateSlides(); // Finalize positions
             }
         });
     }
 
+    // Initialize ad carousel
     init() {
         this.injectStyles();
         this.renderSlides();
@@ -95,6 +112,7 @@ export class CarouselAd {
         console.log('Ad rendered.');
     }
 
+    // Render all slides into DOM
     renderSlides() {
         this.container.innerHTML = '';
         this.slideElements = this.slides.map((data, i) => {
@@ -104,14 +122,17 @@ export class CarouselAd {
             slide.style.transform = `translateX(${i === this.currentSlide ? 0 : i < this.currentSlide ? '-100%' : '100%'})`;
             slide.style.opacity = i === this.currentSlide ? '1' : '0';
 
+            // Title
             const title = document.createElement('div');
             title.className = 'carousel-title';
             title.textContent = data.title;
 
+            // Subtitle
             const subtitle = document.createElement('div');
             subtitle.className = 'carousel-subtitle';
             subtitle.textContent = data.subtitle;
 
+            // Call to Action
             const cta = document.createElement('div');
             cta.className = 'carousel-cta';
             cta.textContent = data.cta;
@@ -128,6 +149,7 @@ export class CarouselAd {
         });
     }
 
+    // Update all slide positions based on currentSlide index
     updateSlides() {
         this.slideElements.forEach((slide, i) => {
             if (i === this.currentSlide) {
@@ -144,22 +166,26 @@ export class CarouselAd {
         console.log(`Slide changed to index ${this.currentSlide}`);
     }
 
+    // Navigate to next slide
     nextSlide() {
         const nextIndex = (this.currentSlide + 1) % this.slides.length;
         this.animateToSlide(nextIndex);
     }
 
+    // Navigate to previous slide
     prevSlide() {
         const prevIndex = (this.currentSlide - 1 + this.slides.length) % this.slides.length;
         this.animateToSlide(prevIndex);
     }
 
+    // Start drag/swipe
     startDrag(x) {
         this.dragging = true;
         this.dragStartX = x;
         this.dragCurrentX = x;
     }
 
+    // Update slide position while dragging
     onDrag(x) {
         if (!this.dragging) return;
         this.dragCurrentX = x;
@@ -173,6 +199,7 @@ export class CarouselAd {
         });
     }
 
+    // End swipe and determine direction
     endDrag(x) {
         if (!this.dragging) return;
         const dx = x - this.dragStartX;
@@ -181,11 +208,13 @@ export class CarouselAd {
         if (Math.abs(dx) > 50) {
             dx < 0 ? this.nextSlide() : this.prevSlide();
         } else {
-            this.updateSlides(); // Snap back
+            this.updateSlides(); // Snap back if not enough swipe
         }
     }
 
+    // Attach input listeners (keyboard, mouse, touch)
     addListeners() {
+        // Keyboard arrows
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowRight') this.nextSlide();
             if (e.key === 'ArrowLeft') this.prevSlide();
@@ -202,7 +231,3 @@ export class CarouselAd {
         this.container.addEventListener('touchend', e => this.endDrag(e.changedTouches[0].clientX));
     }
 }
-
-// 👇 Запуск компонента
-const ad = new CarouselAd(document.getElementById('ad-container'));
-ad.init();
