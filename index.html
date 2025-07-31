@@ -10,7 +10,8 @@
 <div id="ad-container"></div>
 <script type="module">
     import { CarouselAd } from './scripts/CarouselAd.js';
-    const ad = new CarouselAd(document.getElementById('ad-container'));
+    const container = document.getElementById('ad-container');
+    const ad = new CarouselAd(container);
     ad.init();
 </script>
 </body>

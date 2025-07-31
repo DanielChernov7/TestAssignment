@@ -1,3 +1,6 @@
+import { animate, easeOutQuad } from './animate.js';
+
+
 export class CarouselAd {
     constructor(container) {
         this.container = container;
@@ -12,6 +15,77 @@ export class CarouselAd {
         this.dragging = false;
         this.dragStartX = 0;
         this.dragCurrentX = 0;
+    }
+
+    injectStyles() {
+        const style = document.createElement('style');
+        style.textContent = `
+    #ad-container {
+      position: relative;
+      width: 100%;
+      height: 300px; /* или нужная высота */
+      overflow: hidden;
+    }
+    .carousel-slide {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: none; /* анимации в js */
+      will-change: transform, opacity;
+    }
+    .carousel-title { font-size: 16px; font-weight: bold; }
+    .carousel-subtitle { font-size: 11px; margin-top: 4px; }
+    .carousel-cta {
+      align-self: flex-end;
+      padding: 4px 8px;
+      background: #000;
+      color: #fff;
+      font-size: 11px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+    .carousel-cta:hover { transform: scale(1.05); }
+  `;
+        document.head.appendChild(style);
+    }
+
+
+    animateToSlide(newIndex) {
+        if (newIndex === this.currentSlide) return;
+
+        const direction = newIndex > this.currentSlide ? 1 : -1;
+        const width = this.container.offsetWidth;
+        const current = this.slideElements[this.currentSlide];
+        const next = this.slideElements[newIndex];
+
+        next.style.transition = 'none';
+        next.style.transform = `translateX(${direction * width}px)`;
+        next.style.opacity = '1';
+
+        animate({
+            from: 0,
+            to: 1,
+            duration: 500,
+            easing: easeOutQuad,
+            onUpdate: (t) => {
+                const move = width * (1 - t);
+
+                current.style.transform = `translateX(${-direction * move}px)`;
+                current.style.opacity = `${1 - t}`;
+
+                next.style.transform = `translateX(${direction * (move - width)}px)`;
+                next.style.opacity = `${t}`;
+            },
+            onComplete: () => {
+                this.currentSlide = newIndex;
+                this.updateSlides(); // Snap positions and cleanup
+            }
+        });
     }
 
     init() {
@@ -71,13 +145,13 @@ export class CarouselAd {
     }
 
     nextSlide() {
-        this.currentSlide = (this.currentSlide + 1) % this.slides.length;
-        this.updateSlides();
+        const nextIndex = (this.currentSlide + 1) % this.slides.length;
+        this.animateToSlide(nextIndex);
     }
 
     prevSlide() {
-        this.currentSlide = (this.currentSlide - 1 + this.slides.length) % this.slides.length;
-        this.updateSlides();
+        const prevIndex = (this.currentSlide - 1 + this.slides.length) % this.slides.length;
+        this.animateToSlide(prevIndex);
     }
 
     startDrag(x) {
@@ -91,7 +165,6 @@ export class CarouselAd {
         this.dragCurrentX = x;
         const dx = this.dragCurrentX - this.dragStartX;
 
-        // Shift current + neighbors visually
         this.slideElements.forEach((slide, i) => {
             const offset = (i - this.currentSlide) * this.container.offsetWidth + dx;
             slide.style.transition = 'none';
@@ -118,39 +191,12 @@ export class CarouselAd {
             if (e.key === 'ArrowLeft') this.prevSlide();
         });
 
-        this.container.addEventListener('mousedown', e => {
-            this.startX = e.clientX;
-        });
-        this.container.addEventListener('mouseup', e => {
-            if (this.startX === null) return;
-            const dx = e.clientX - this.startX;
-            if (dx > 50) this.prevSlide();
-            else if (dx < -50) this.nextSlide();
-            this.startX = null;
-        });
-
-        this.container.addEventListener('touchstart', e => {
-            if (e.touches.length === 1) this.startX = e.touches[0].clientX;
-        });
-        this.container.addEventListener('touchend', e => {
-            if (this.startX === null) return;
-            const dx = e.changedTouches[0].clientX - this.startX;
-            if (dx > 50) this.prevSlide();
-            else if (dx < -50) this.nextSlide();
-            this.startX = null;
-        });
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowRight') this.nextSlide();
-            if (e.key === 'ArrowLeft') this.prevSlide();
-        });
-
-        // Mouse
+        // Mouse events
         this.container.addEventListener('mousedown', e => this.startDrag(e.clientX));
         document.addEventListener('mousemove', e => this.onDrag(e.clientX));
         document.addEventListener('mouseup', e => this.endDrag(e.clientX));
 
-        // Touch
+        // Touch events
         this.container.addEventListener('touchstart', e => this.startDrag(e.touches[0].clientX));
         this.container.addEventListener('touchmove', e => this.onDrag(e.touches[0].clientX));
         this.container.addEventListener('touchend', e => this.endDrag(e.changedTouches[0].clientX));
